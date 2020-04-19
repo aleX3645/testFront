@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+ <html>
+  <head>
+     <title>Title of the document</title>
+  </head>
+
+  <body>
+  <form method="post">
+      <input type="text" name="idInput" placeholder="Введите id">
+      <input type="text" name="langInput" placeholder="Введите Язык">
+      <button type="submit">Загрузить</button>
+  </form>
+  <canvas id="myChart"></canvas>
+  <input id = "scroll" type="range" min="0" max="100" value = "" step="1">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+  <script>
+      class ChartData{
+          constructor(type, data, options, func, minParam, maxParam, minX, maxX, stepX){
+              this.type = type;
+              this.data = data;
+              this.options = options;
+              this.func = func;
+              this.minParam = minParam;
+              this.maxParam = maxParam;
+              this.minX = minX;
+              this.maxX = maxX;
+              this.stepX = stepX;
+          }
+      }
+  </script>
+  <script>
+
+      class JsonManager{
+          constructor(json) {
+              let obj = json;
+              this.chartData = new ChartData(obj.type,this.setupData(obj.type, obj.label), this.setupOptions(obj.type, obj.xAxis, obj.yAxis), obj.func
+                      , obj.minParam, obj.maxParam, obj.minX, obj.maxX, obj.stepX);
+          }
+
+          getChartData(){
+              return this.chartData;
+          }
+
+          setupData(type, label){
+              switch (type) {
+                  case 'line':
+                        return {labels: '',
+                            datasets: [{label: label,
+                                borderColor: '#b22222',
+                                data: [],pointHitRadius: 15,
+                                pointBorderColor: 'transparent',
+                                pointBackgroundColor: 'transparent',
+                                pointHoverBorderColor: 'blue',
+                                pointHoverBackgroundColor: 'red'}]};
+                  default:
+                      return;
+              }
+          }
+
+          setupOptions(type, x, y){
+              alert(x);
+              switch (type) {
+                  case 'line':
+                      return {
+                          scales: {
+                              xAxes: [{
+                                  scaleLabel: {
+                                      display: true,
+                                      labelString: x,
+                                      fontColor: "black"
+                                  }
+                              }],
+                              yAxes: [{
+                                  scaleLabel: {
+                                      display: true,
+                                      labelString: y,
+                                      fontColor: "black"
+                                  }
+                              }]
+                          }
+                      };
+                  default:
+                      return;
+              }
+          }
+
+          deleteWrongSymbols(text){
+              var result = "";
+              if(label.match("<sup>")){
+                  result += text.substring(0, text.indexOf("<sup>"));
+                  var temp = text.substring(text.indexOf("<sup>"+5), text.indexOf("<\\sup>"))
+                  result+=temp.sup();
+                  result+= text.substring(text.indexOf("<\\sup>"+6));
+                  result
+              }
+              return result;
+          }
+      }
+
+      class ChartModule{
+
+          constructor(data, chartName, scrollName){
+              this.data = data;
+              this.T = data.minParam;
+              this.chartName = chartName;
+
+              this.scrollElement = document.getElementById(scrollName);
+              this.scrollElement.value = data.minParam;
+              this.scrollElement.min = data.minParam;
+              this.scrollElement.max = data.maxParam;
+              this.scrollElement.step = (data.maxParam-data.minParam)/10;
+
+              var listener = {
+                  object: this,
+                  handleEvent: function(event) {
+
+                      this.object.T = this.object.scrollElement.value;
+
+                      for(var i = 0; i<this.object.x.length;i++){
+                          this.object.y[i] = this.object.computeByFunction(this.object.x[i]);
+                      }
+
+                      this.object.chart.update();
+                  }
+              };
+
+              this.scrollElement.addEventListener('input',listener);
+
+              switch(this.data.type){
+                  case "line":
+                      this.x = new Array();
+                      this.temp = new Array()
+                      this.y = new Array();
+
+                      let digit = this.digit(this.data.stepX)
+                      for(var i = this.data.minX; i<=this.data.maxX; i+=this.data.stepX){
+                          this.temp.push(i.toFixed(digit));
+                          this.x.push(i);
+                          this.y.push(this.computeByFunction(i));
+                      }
+
+                      this.data.data.labels = this.temp;
+                      this.data.data.datasets[0].data = this.y;
+
+                      this.chart = new Chart(document.getElementById(chartName).getContext('2d'), {
+
+                          type:this.data.type,
+
+                          // The data for our dataset
+                          data: this.data.data,
+
+                          // Configuration options go here
+                          options: this.data.options
+                      });
+                      break;
+                  default:
+                      break;
+
+              }
+          }
+
+          computeByFunction(X){
+              var T = this.T
+
+              return eval(this.data.func)
+
+          }
+
+          digit(num){
+              var res = 0;
+              var temp = num;
+              while(temp < 1){
+                  temp*=10;
+                  res++;
+              }
+              return res;
+          }
+      }
+  </script>
+  <script defer>
+      var jm = new JsonManager(JSON.parse('{{json}}'.replace(/&quot;/g,'"')));
+      var temp = jm.getChartData();
+      var dm = new ChartModule(temp,"myChart","scroll");
+  </script>
+
+  </body>
+</html>  	
